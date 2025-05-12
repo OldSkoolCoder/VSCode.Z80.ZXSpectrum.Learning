@@ -1,0 +1,36 @@
+org $8000
+
+; ld destination, source
+ld  hl, msg
+loop:
+ld a, (hl)
+or a        ; the only reason for this, is load does not affect flags
+;cp $00
+ret z
+rst $10
+inc hl
+jr loop
+
+msg: defm 'Hello From The ZX Speccy', $00
+end $8000
+
+; JUMPS (jmp=6502)
+; jp $XXXX
+; jp (HL) jumps to HL Address
+; jp (Index Reg)
+; jp nz,$0000
+; jp z
+; jp nc
+; jp c
+; jp po
+; jp pe
+; jp p
+; jp m
+
+; Branches (b** =6502)
+; jr = jump relative
+; jr n
+; jr nz
+; jr z
+; jr nc
+; jr c

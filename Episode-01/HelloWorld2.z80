@@ -1,0 +1,60 @@
+org $8000
+
+; System variable: permanent display attributes
+; FORMAT : FLASH, BRIGHT, PAPER, INK (FBPPPIII)
+ATTR_S: equ $5C8D
+
+ATTR_T: equ $5C8F
+
+LOCATE: equ $0DD9
+CLS: equ $0DAF
+
+Main:
+ld a, $0E
+ld hl, ATTR_T
+ld (hl),a
+ld hl, ATTR_S
+ld (hl),a
+
+call CLS
+
+ld b, $18-$0a
+ld c, $21-$03
+
+call LOCATE
+
+; ld destination, source
+ld  hl, msg
+loop:
+ld a, (hl)
+or a        ; the only reason for this, is load does not affect flags
+jr z, Exit
+rst $10
+inc hl
+jr loop
+Exit:
+jr Exit
+
+msg: defm 'Hello From The ZX Speccy', $00
+end $8000
+
+; JUMPS (jmp=6502)
+; jp $XXXX
+; jp (HL) jumps to HL Address
+; jp (Index Reg)
+; jp nz,$0000
+; jp z
+; jp nc
+; jp c
+; jp po
+; jp pe
+; jp p
+; jp m
+
+; Branches (b** =6502)
+; jr = jump relative
+; jr n
+; jr nz
+; jr z
+; jr nc
+; jr c

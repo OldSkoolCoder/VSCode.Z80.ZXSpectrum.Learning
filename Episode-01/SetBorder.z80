@@ -1,0 +1,7 @@
+org $8000
+
+ld a, 3
+out ($fe), a
+ret
+
+end $8000
