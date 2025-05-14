@@ -1,0 +1,20 @@
+; Screen Location = 010T TSSS LLLC CCCC
+; TT    = Which Third = 0,1 or 2
+; SSS   = Which Pixeline = 0 -> 7
+; LLL   = Character Line = 0 -> 7
+; CCCCC = Line Column 0 -> 31
+
+org $8000
+
+ld hl, $4000    ; Screen Starting Point
+Looper:
+ld (hl), $aa
+inc hl
+halt
+ld a, $58
+cp h
+jr nz, Looper
+Exit:
+jp Exit
+
+end $8000

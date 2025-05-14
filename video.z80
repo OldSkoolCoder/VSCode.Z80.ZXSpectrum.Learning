@@ -1,0 +1,106 @@
+; Screen Location = 010T TSSS LLLC CCCC
+; TT    = Which Third = 0,1 or 2
+; SSS   = Which Pixeline = 0 -> 7
+; LLL   = Character Line = 0 -> 7
+; CCCCC = Line Column 0 -> 31
+
+; https://wiki.speccy.org/cursos/ensamblador/gfx2_direccionamiento
+; Gets the memory location corresponding to the scanline.
+; The next to the one indicated.
+;     010T TSSS LLLC CCCC
+; Input:  HL -> current pixelline.
+; Output: HL -> pixelline next.
+; Alters the value of the AF and HL registers.
+;------------------------------------------------------------------
+NextPixelLine:
+    inc h
+    ld a,h
+;   h =  010TTSSS
+    and %00000111   ; 7 ; this is just to set the flags....
+    ret nz
+
+    ld a,l
+;   l =     LLLCCCCC
+    add a, %00100000    ; $20 ; Adding 1 to the Character Line
+    ld l, a
+    ret c
+
+    ld a, h
+;   h =  010TTSSS
+    sub %00001000    ; 8 ; Subtracting 1 from the Third
+    ld h, a
+    ret
+
+; -----------------------------------------------------------------
+; https://wiki.speccy.org/cursos/ensamblador/gfx2_direccionamiento
+; Gets the memory location corresponding to the scanline.
+; The following is the first time this has been done; prior 
+; to that indicated.
+;     010T TSSS LLLC CCCC
+; Input:  HL -> current scanline.	    
+; Output: HL -> previous scanline.
+; Alters the value of the AF, BC and HL registers.
+;------------------------------------------------------------------
+PreviousPixelLine:
+    ld a, h
+    dec h
+;   h =  010TTSSS
+    and %00000111
+    ret nz
+
+    ld a, l
+;   l =  LLLCCCCC
+    sub %00100000
+    ld l, a
+    ret c
+
+    ld a, h
+;   h =    010TTSSS
+    add a, %00001000
+    ld h, a
+    ret
+
+;------------------------------------------------------------------
+; Gets the memory location corresponding to the start of the pixelline.
+; The following is the first time this has been done; prior 
+; to that indicated.
+;     010T TSSS LLLC CCCC
+; Input:  B ->  pixelline required.	    
+; Output: HL -> address of that line.
+; Alters the value of the AF, BC and HL registers.
+;------------------------------------------------------------------
+PixelLineAddressCalculator:
+    ; To work out the Screen Third
+    ld a, b
+;   h =  010TTSSS
+    ; mask of top 2 bits these represent the thirds
+    and %11000000
+    ; shift right 3 bits
+    rra
+    rra
+    rra
+    ; store in h of hl
+    ld h,a
+
+    ; Work Out the Screen Character PixelLine in that Third
+    ld a, b
+    ; mask off bottom 3 bits, which represent the pixel line in the character line
+    and %00000111
+    ; add it to h
+    add a, h
+    ; or h with $40, which represents the base address of the scree = $4000
+    or %01000000
+    ; store h of hl
+    ld h, a
+
+    ; Work Out the Screen Character Line in that Third
+    ld a, b
+;   l =  LLLCCCCC
+    ; mask off middle 3 bits which represnt the character line of the screen third 
+    and %00111000
+    ; shift left 2 bits to put into correct location
+    rla
+    rla
+    ; store result into l of hl
+    ld l, a
+    ret

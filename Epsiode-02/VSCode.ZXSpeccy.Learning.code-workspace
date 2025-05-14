@@ -1,0 +1,16 @@
+{
+    "folders": [
+		{
+			"path": ".",
+      "path": ".."
+		}
+    ],
+	"settings": {
+        "files.autoSave": "afterDelay",
+        "editor.acceptSuggestionOnEnter": "off",
+        "editor.fontSize": 22,
+        "files.associations": {
+            "*.z80": "z80-macroasm"
+		},
+	}
+}

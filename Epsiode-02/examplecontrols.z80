@@ -1,0 +1,11 @@
+org $8000
+
+ld hl, $4000
+
+Loop:
+call ScanKeys
+ld (hl), d
+jr Loop
+
+include "controls.z80"
+end $8000

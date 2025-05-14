@@ -1,0 +1,107 @@
+;Input
+;Half Row       Hex         Binary
+;Caps Shift-V   $FE         %1111 1110
+;A-G            $FD         %1111 1101
+;Q-T            $FB         %1111 1011
+;1-5            $F7         %1111 0111
+;0-6            $EF         %1110 1111
+;P-Y            $DF         %1101 1111
+;ENTER-H        $BF         %1011 1111
+;Space-B        $7F         %0111 1111
+
+;Output
+; xxxx0000 
+;        ^= 'A'
+;       ^== 'Z'
+;      ^=== '0'
+;     ^==== 'O'
+
+ScanKeys:
+    ; initialise D
+    ld d, $00
+
+scanKey_A:
+    ; The operand n is placed on the bottom half (A0 through A7) of the address bus 
+    ; to select the I/O device at one of 256 possible ports. The contents of the 
+    ; Accumulator also appear on the top half (A8 through A15) of the address bus at 
+    ; this time. Then one byte from the selected port is placed on the data bus and 
+    ; written to the Accumulator (Register A) in the CPU.
+    ld a, $FD
+    ; interogate Keyboard Port
+    in a, ($FE)
+    ; test if bit 0 is set
+    bit $00, a
+    ; if set then jump to Z test, as set = not pressed
+    jr nz, scanKey_Z
+    ; set bit 0 in D (Result) = 1 (A Key)
+    set $00, d
+
+scanKey_Z:
+    ; The operand n is placed on the bottom half (A0 through A7) of the address bus 
+    ; to select the I/O device at one of 256 possible ports. The contents of the 
+    ; Accumulator also appear on the top half (A8 through A15) of the address bus at 
+    ; this time. Then one byte from the selected port is placed on the data bus and 
+    ; written to the Accumulator (Register A) in the CPU.
+    ld a, $FE
+    ; interogate Keyboard Port
+    in a, ($FE)
+    ; test if bit 0 is set
+    bit $01, a
+    ; if set then jump to 0 test, as set = not pressed
+    jr nz, scanKey_0
+    ; set bit 1 in D (Result) = 1 (Z Key)
+    set $01, d
+
+    ; checking whether both keys are pressed.
+    ld a, d
+    sub $03
+    jr nz, scanKey_0
+    ld d, a
+
+scanKey_0:
+    ; The operand n is placed on the bottom half (A0 through A7) of the address bus 
+    ; to select the I/O device at one of 256 possible ports. The contents of the 
+    ; Accumulator also appear on the top half (A8 through A15) of the address bus at 
+    ; this time. Then one byte from the selected port is placed on the data bus and 
+    ; written to the Accumulator (Register A) in the CPU.
+    ld a, $EF
+    ; interogate Keyboard Port
+    in a, ($FE)
+    ; test if bit 0 is set
+    bit $00, a
+    ; if set then jump to 0 test, as set = not pressed
+    jr nz, scanKey_O
+    ; set bit 2 in D (Result) = 1 (0 Key)
+    set $02, d
+
+scanKey_O:
+    ; The operand n is placed on the bottom half (A0 through A7) of the address bus 
+    ; to select the I/O device at one of 256 possible ports. The contents of the 
+    ; Accumulator also appear on the top half (A8 through A15) of the address bus at 
+    ; this time. Then one byte from the selected port is placed on the data bus and 
+    ; written to the Accumulator (Register A) in the CPU.
+    ld a, $DF
+    ; interogate Keyboard Port
+    in a, ($FE)
+    ; test if bit 0 is set
+    bit $01, a
+    ; if set then exit function
+    ret nz
+    ; set bit 2 in D (Result) = 1 (0 Key)
+    set $03, d
+
+    ; checking whether both keys are pressed.
+    ld a, d
+    ; mask of the bits in question
+    and %00001100
+    ; are the two bits set
+    cp $0C
+    ; no, then exit
+    ret nz
+    ; yes, then load a with d
+    ld a, d
+    ; mask off everything but lower two bits
+    and $03
+    ; store back into d
+    ld d, a
+    ret
