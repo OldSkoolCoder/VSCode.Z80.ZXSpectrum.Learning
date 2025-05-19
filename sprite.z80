@@ -1,0 +1,33 @@
+ZERO:           equ $00
+LHDOT:          equ $80
+PADDLE:         equ $3C
+
+PADDLE_BOTTOM:  equ $A8  ; TTLLLSSS
+PADDLE_TOP:     equ $00     ; TTLLLLLSSSSS
+paddle1pos:     dw $4861    ; 010T TSSS LLLC CCC
+paddle2pos:     dw $487E    ; 010T TSSS LLLC CCC
+
+BALL_BOTTOM:    equ $ba
+BALL_TOP:       equ $00
+
+ballPos:        dw $4870
+ballSetting:    db $00      ; 00000000
+                            ;     ^^^^ = X Speed
+                            ;   ^^==== = Y Speed
+                            ;  ^====== = X Direction
+                            ; ^======= = Y Direction 
+ballRotation:   db $F8
+
+; Ball sprite:
+;     1 line at 0, 4 lines 3c, 1 line at 0
+ballRight:     ;  Right        Sprite         Left
+db $3c, $00    ; +0/$00 00111100    00000000 -8/$f8
+db $1e, $00    ; +1/$01 00011110    00000000 -7/$f9
+db $0f, $00    ; +2/$02 00001111    00000000 -6/$fa
+db $07, $80    ; +3/$03 00000111    10000000 -5/$fb
+db $03, $c0    ; +4/$04 00000011    11000000 -4/$fc
+db $01, $e0    ; +5/$05 00000001    11100000 -3/$fd
+db $00, $f0    ; +6/$06 00000000    11110000 -2/$fe
+db $00, $78    ; +7/$07 00000000    01111000 -1/$ff
+ballLeft:
+db $00, $3c    ; +8/$08 00000000    00111100 +0/$00

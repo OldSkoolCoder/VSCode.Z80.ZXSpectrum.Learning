@@ -1,0 +1,45 @@
+org $8000
+
+    ld a, $02
+    out ($FE), a
+
+    ld a, $00
+    ld (ballRotation), a
+
+loop:
+    call PrintBall
+loop_cont:
+    ld b, $08
+loopRight:
+    exx
+    ld a, (ballRotation)
+    inc a
+    ld (ballRotation), a
+    call PrintBall
+    exx
+    halt
+    djnz loopRight
+
+    ld a, $00
+    ld (ballRotation), a
+
+    ld b, $08
+loopLeft:
+    exx
+    ld a, (ballRotation)
+    dec a
+    ld (ballRotation), a
+    call PrintBall
+    exx
+    halt
+    djnz loopLeft
+
+    ld a, $00
+    ld (ballRotation), a
+    jr loop_cont
+
+include "video.z80"
+include "sprite.z80"
+include "controls.z80"
+
+end $8000

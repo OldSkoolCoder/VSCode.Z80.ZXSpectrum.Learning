@@ -1,0 +1,67 @@
+org $8000
+
+    ld a, $02
+    out ($fe), a
+
+    call Cls
+
+    call PrintLine
+loop:
+    call ScanKeys
+MovePaddle1Up:
+    bit $00, d
+    jr z, MovePaddle1Down
+    ld hl, (paddle1pos)
+    ld a, PADDLE_TOP
+    call CheckTop
+    jr z, MovePaddle2Up
+    call PreviousPixelLine
+    ld (paddle1pos), hl
+    jr MovePaddle2Up
+
+MovePaddle1Down:
+    bit $01, d
+    jr z, MovePaddle2Up
+    ld hl, (paddle1pos)
+    ld a, PADDLE_BOTTOM
+    call CheckBottom
+    jr z, MovePaddle2Up
+    call NextPixelLine
+    ld (paddle1pos), hl
+
+MovePaddle2Up:
+    bit $02, d
+    jr z, MovePaddle2Down
+    ld hl, (paddle2pos)
+    ld a, PADDLE_TOP
+    call CheckTop
+    jr z, MovePaddleExit
+    call PreviousPixelLine
+    ld (paddle2pos), hl
+    jr MovePaddleExit
+
+MovePaddle2Down:
+    bit $03, d
+    jr z, MovePaddleExit
+    ld hl, (paddle2pos)
+    ld a, PADDLE_BOTTOM
+    call CheckBottom
+    jr z, MovePaddleExit
+    call NextPixelLine
+    ld (paddle2pos), hl
+
+MovePaddleExit:
+
+
+    ld hl, (paddle1pos)
+    call PrintPaddle
+    ld hl, (paddle2pos)
+    call PrintPaddle
+
+    jr loop
+
+include "video.z80"
+include "sprite.z80"
+include "controls.z80"
+
+end $8000

@@ -60,6 +60,59 @@ PreviousPixelLine:
     ld h, a
     ret
 
+PrintBall:
+    ld b, $00
+    ld a, (ballRotation)
+    ld c, a
+    cp $00
+    ld a, $00
+    jp p, printBall_right
+
+printBall_left:
+    ld hl, ballLeft
+    sub c
+    add a, a
+    ld c, a
+    sbc hl, bc
+    jr printBall_continue
+
+printBall_right:
+    ld hl, ballRight
+    add a, c
+    add a, a
+    ld c, a
+    add hl, bc
+
+printBall_continue:
+    ex de, hl
+    ld hl, (ballPos)
+    ld (hl), ZERO
+    inc l
+    ld (hl), ZERO
+    dec l
+    call NextPixelLine
+
+    ld b, $04
+printBall_loop:
+    ld a, (de)
+    ld (hl), a
+    inc de
+    inc l
+    ld a, (de)
+    ld (hl), a
+    dec de
+    dec l
+    call NextPixelLine
+    djnz printBall_loop
+
+    ld (hl), ZERO
+    inc l
+    ld (hl), ZERO
+    ret
+
+
+
+
 ;------------------------------------------------------------------
 ; Gets the memory location corresponding to the start of the pixelline.
 ; The following is the first time this has been done; prior 
@@ -103,4 +156,163 @@ PixelLineAddressCalculator:
     rla
     ; store result into l of hl
     ld l, a
+    ret
+
+;-------------------------------------------------------------------- 
+; Clean screen, ink 7, background 0. ; Alters the value of the AF, BC, DE and HL registers. 
+;--------------------------------------------------------------------
+Cls:
+; Clean the pixels on the screen
+    ld hl, $4000
+    ld (hl), $00
+    ld de, $4001
+    ld bc, $17FF
+    ldir ;----- this would be like this
+    ;   repeat: ld a, (hl)
+    ;           ld (de),a
+    ;           inc hl
+    ;           inc de
+    ;           dec bc
+    ;           jrnz repeat 
+    ;----------------------------------
+
+; Sets the ink to white and the background to black
+    ;ld hl, $5800
+    inc hl
+    ld (hl), $07
+    ;ld de, $5801
+    inc de
+    ld bc, $2FF
+    ldir ;----- this would be like this
+    ;   repeat: ld a, (hl)
+    ;           ld (de),a
+    ;           inc hl
+    ;           inc de
+    ;           dec bc
+    ;           jrnz repeat 
+    ;----------------------------------
+
+    ret
+
+;-------------------------------------------------------------------- 
+; Paints the centre line. 
+; Alters the value of the AF, B, C and HL registers. 
+;--------------------------------------------------------------------
+PrintLine:
+    ld b, $18
+    ld hl, $4010
+
+printline_loop:
+    ld (hl), ZERO
+    inc h
+    ;push bc
+
+    ; backup b register into c
+    ld c,b
+
+    ; paint the visible part of the line
+    ld b, $06
+printline_loop2:
+    ld (hl), LHDOT
+    inc h
+    djnz printline_loop2
+    ;pop bc
+
+    ; restores b register from c
+    ld b,c
+
+    ld (hl), ZERO
+    call NextPixelLine
+    djnz printline_loop
+    ret
+
+;-------------------------------------------------------------------- 
+; Paint the paddle. 
+; Input: HL -> paddle position.
+; 
+; Alters the value of the B and HL registers. 
+;--------------------------------------------------------------------
+PrintPaddle:
+    ld (hl), ZERO
+    call NextPixelLine
+
+    ld b, $16
+printPaddle_loop:
+    ld (hl), PADDLE
+    call NextPixelLine
+    djnz printPaddle_loop
+    ld (hl), ZERO
+    ret
+
+;--------------------------------------------------------------------
+; Evaluates whether the lower limit has been reached.
+; Input:  A  -> Upper limit (TTLLLLSSS).
+;         HL -> Current position (010TTSSS LLLCCCCCCC).
+; Output: Z  =  Reached.
+;         NZ =  Not reached.
+;
+; Alters the value of the AF and BC registers.
+;--------------------------------------------------------------------
+CheckBottom:
+    call checkVerticalLimit
+    ret c
+
+checkBottom_bottom:
+    xor a
+    ret
+
+;--------------------------------------------------------------------
+; Evaluates whether the upper limit has been reached.
+; Input:  A  -> Upper margin (TTLLLLSSS).
+;         HL -> Current position (010TTSSS LLLCCCCCCC).
+; Output: Z  =  Reached.
+;         NZ =  Not reached.
+;
+; Alters the value of the AF and BC registers.
+;--------------------------------------------------------------------
+CheckTop:
+    call checkVerticalLimit
+    ret
+
+;--------------------------------------------------------------------
+; Evaluates whether the vertical limit has been reached.
+; Input: A  -> Vertical limit (TTLLLLSSS).
+;        HL -> Current position (010TTSSS LLLCCCCCCC).
+;
+; Alters the value of the AF and BC registers.
+;--------------------------------------------------------------------
+checkVerticalLimit:
+    ld b, a
+    call AddressToPixelLineCalculator
+    cp b
+    ret
+
+
+;------------------------------------------------------------------
+; Gets the pixel line location that corresponding to the memory address.
+; The following is the first time this has been done; prior 
+; to that indicated.
+;     010T TSSS LLLC CCCC
+; Input:  HL -> address of that line.	    
+; Output: A -> pixelline for the address.
+; Alters the value of the A, and C.
+;------------------------------------------------------------------
+AddressToPixelLineCalculator:
+    ld a, h
+    and %00011000   ; preserving the Third xxxTTxxx
+    rlca
+    rlca
+    rlca
+    ld c, a
+
+    ld a, h
+    and %00000111   ; preserving the pixel lines
+    or c
+    ld c, a         ; C = TTxxxSSS
+
+    ld a, l
+    and %11100000   ; Preserving the character line number
+    rrca
+    rrca
+    or c            ; A = TTLLLSSS
     ret

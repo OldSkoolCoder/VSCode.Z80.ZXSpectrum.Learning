@@ -1,0 +1,39 @@
+org $8000
+
+ld hl, $4000
+ld b, $c0
+
+LoopDown:
+ld (hl), $3C
+call NextPixelLine
+djnz LoopDown
+; dec a
+; jr nz, Loop
+
+ld hl, $57FF
+ld b, $c0
+
+LoopUp:
+ld (hl), $3C
+call PreviousPixelLine
+djnz LoopUp
+; dec a
+; jr nz, Loop
+
+ld b, 96
+call PixelLineAddressCalculator
+ld b, $20
+LoopRight:
+ld (hl), $FF
+inc hl
+djnz LoopRight
+; dec a
+; jr nz, Loop
+
+Exit:
+jp Exit
+
+include "video.z80"
+include "sprite.z80"
+
+end $8000

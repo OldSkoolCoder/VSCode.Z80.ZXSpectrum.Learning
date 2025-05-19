@@ -14,14 +14,17 @@
             "type": "shell",
             "windows": {
                 "command": "e:\\MyAssemblers\\PasMo\\pasmo5.3.2.exe --name ${fileBasenameNoExtension} --tapbas ${fileDirnameBasename}\\${fileBasenameNoExtension}.z80 bin\\${fileBasenameNoExtension}.tap bin\\${fileBasenameNoExtension}.sym",
-                "console": "externalTerminal",
+                "console": "externalTerminal"
             },
             "linux": {
                 "command": ""
             },
             "osx": {
                 "command": ""
-            }
+            },
+            "problemMatcher": [
+                "$errmatcher-pasmo"
+            ]
         },
         {
             "label": "Launch Emulator",
@@ -43,6 +46,6 @@
                 "kind": "build",
                 "isDefault": true
             }
-        },
-   ]
+        }
+    ]
 }
