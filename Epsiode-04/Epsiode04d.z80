@@ -1,0 +1,63 @@
+org $8000
+
+    ld a, $02
+    out ($FE), a
+
+    call Cls
+    call PrintLine
+    call PrintBorder
+
+    call PrintPoints
+loop:
+    ld a, (ballSetting)
+    rrca
+    rrca
+    rrca
+    rrca
+    and %00000011
+    ld b, a
+
+    ld a, (countLoopBall)
+    inc a
+    ld (countLoopBall), a
+    cp b
+    jr nz, loop_paddle
+    call MoveBall
+    xor a                   ; set A = 0
+    ld (countLoopBall), a
+
+loop_paddle:
+    ld a, (countLoopPaddle)
+    inc a
+    ld (countLoopPaddle), a
+    cp $02
+    jr nz, loop_continue
+    call ScanKeys
+    call MovePaddle
+    xor a                   ; set A = 0
+    ld (countLoopPaddle), a
+
+loop_continue:
+    call CheckBallCross
+    call PrintBall
+    call ReprintLine
+    call RePrintPoints
+
+    ld hl, (paddle1pos)
+    call PrintPaddle
+    ld hl, (paddle2pos)
+    call PrintPaddle
+
+    jr loop
+
+include "video.z80"
+include "sprite.z80"
+include "controls.z80"
+include "game.z80"
+
+countLoopBall:      db $00
+countLoopPaddle:    db $00
+p1points:           db $00
+p2points:           db $00
+
+end $8000

@@ -1,0 +1,18 @@
+org $8000
+
+    ld a, $02
+    out ($FE), a
+
+    call PrintBall
+loop:
+    call MoveBall
+    call PrintBall
+    halt
+    jr loop
+
+include "video.z80"
+include "sprite.z80"
+include "controls.z80"
+include "game.z80"
+
+end $8000

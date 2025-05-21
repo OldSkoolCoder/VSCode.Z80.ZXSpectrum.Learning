@@ -1,0 +1,237 @@
+MoveBall:
+    ld a, (ballSetting)
+    and %10000000       ; $80
+    jr nz, moveBall_Down
+
+moveBall_up:
+    ld hl, (ballPos)
+    ld a, BALL_TOP
+    call CheckTop
+    jr z, moveBall_upChg
+    call PreviousPixelLine
+    ld (ballPos), hl
+    jr moveBall_x
+
+moveBall_upChg:
+    ld a, (ballSetting)
+    or %10000000
+    ld (ballSetting), a
+    call NextPixelLine
+    ld (ballPos), hl
+    jr moveBall_x
+
+moveBall_Down:
+    ld hl, (ballPos)
+    ld a, BALL_BOTTOM
+    call CheckBottom
+    jr z, moveBall_downChg
+    call NextPixelLine
+    ld (ballPos), hl
+    jr moveBall_x
+
+moveBall_downChg:
+    ld a, (ballSetting)
+    and %01111111
+    ld (ballSetting), a
+    call PreviousPixelLine
+    ld (ballPos), hl
+
+moveBall_x:
+    ld a, (ballSetting)
+    and %01000000       ; $40
+    jr nz, moveBall_left
+
+moveBall_right:
+    ld a, (ballRotation)
+    cp $08
+    jr z, moveBall_rightLast
+    inc a
+    ld (ballRotation), a
+    jr moveBall_end
+
+moveBall_rightLast:
+    ld a, (ballPos)
+    and $1F             ; 0 -> 31 because of 32 Chars on screen in row
+    cp MARGIN_RIGHT
+    jr z, moveBall_rightChange
+    ld hl, ballPos      ; get memory location of ballPos
+    inc (hl)            ; increase value of ballPos by 1
+    ld a, $01
+    ld (ballRotation), a
+    jr moveBall_end
+
+moveBall_rightChange:
+    ld hl, p1points
+    inc (hl)
+    call PrintPoints
+
+    ld a, (ballSetting)
+    or %01000000
+    ld (ballSetting), a
+    ld a, $FF
+    ld (ballRotation), a
+    jr moveBall_end
+
+moveBall_left:
+    ld a, (ballRotation)
+    cp $F8
+    jr z, moveBall_leftLast
+    dec a
+    ld (ballRotation), a
+    jr moveBall_end
+
+moveBall_leftLast:
+    ld a, (ballPos)
+    and $1F             ; 0 -> 31 because of 32 Chars on screen in row
+    cp MARGIN_LEFT
+    jr z, moveBall_leftChange
+    ld hl, ballPos      ; get memory location of ballPos
+    dec (hl)            ; decrease value of ballPos by 1
+    ld a, $FF
+    ld (ballRotation), a
+    jr moveBall_end
+
+moveBall_leftChange:
+    ld hl, p2points
+    inc (hl)
+    call PrintPoints
+
+    ld a, (ballSetting)
+    and %10111111
+    ld (ballSetting), a
+    ld a, $01
+    ld (ballRotation), a
+
+moveBall_end:
+    ret
+
+MovePaddle:
+    bit $00, d
+    jr z, MovePaddle1Down
+    ld hl, (paddle1pos)
+    ld a, PADDLE_TOP
+    call CheckTop
+    jr z, MovePaddle2Up
+    call PreviousPixelLine
+    ld (paddle1pos), hl
+    jr MovePaddle2Up
+
+MovePaddle1Down:
+    bit $01, d
+    jr z, MovePaddle2Up
+    ld hl, (paddle1pos)
+    ld a, PADDLE_BOTTOM
+    call CheckBottom
+    jr z, MovePaddle2Up
+    call NextPixelLine
+    ld (paddle1pos), hl
+
+MovePaddle2Up:
+    bit $02, d
+    jr z, MovePaddle2Down
+    ld hl, (paddle2pos)
+    ld a, PADDLE_TOP
+    call CheckTop
+    jr z, MovePaddleExit
+    call PreviousPixelLine
+    ld (paddle2pos), hl
+    jr MovePaddleExit
+
+MovePaddle2Down:
+    bit $03, d
+    jr z, MovePaddleExit
+    ld hl, (paddle2pos)
+    ld a, PADDLE_BOTTOM
+    call CheckBottom
+    jr z, MovePaddleExit
+    call NextPixelLine
+    ld (paddle2pos), hl
+
+MovePaddleExit:
+    ret
+
+;--------------------------------------------------------------------
+; Evaluates whether the ball collides on the X-axis with the paddle.
+; Input:	C -> Column where the collision occurs. 
+; Exit:	Z -> Collide.
+;		NZ -> No collision.
+; Alters the value of the AF registers.
+;--------------------------------------------------------------------
+CheckCrossX:
+    ld a, (ballPos)
+    and %00011111
+    cp c
+    ret
+
+;--------------------------------------------------------------------
+; Evaluates whether the ball collides in the Y-axis with the paddle.
+; Input:  HL -> Paddle position.
+; Output: Z  -> Collide.
+;         NZ -> No collision.
+; Alters the value of the AF, BC and HL registers.
+;--------------------------------------------------------------------
+CheckCrossY:
+    call AddressToPixelLineCalculator
+    inc a
+    ld c, a
+    ld hl, (ballPos)
+    call AddressToPixelLineCalculator
+    ld b, a             ; b = Y Coord of Ball
+    add a, $04
+    sub c               ; c = Y Coord of Paddle
+    ; exit if less then, or ball has passed over paddle
+    ret c           ; return if carry is set
+
+    ld a, c
+    add a, $16
+    ld c, a
+
+    ld a, b
+    inc a
+    sub c
+    ; exit if greater than, or ball passed under paddle
+    ret nc          ; return if carry not set
+
+    xor a           ; A = 0; and set the Z Flag
+    ret
+
+;--------------------------------------------------------------------
+; Assesses whether there is a collision between the ball 
+; and the paddles.
+; Alters the value of the AF, C and HL registers.
+;--------------------------------------------------------------------
+CheckBallCross:
+    ld a, (ballSetting)
+    and %01000000               ; $40
+    jr nz, checkBallCross_left
+
+checkBallCross_right:
+    ld c, CROSS_RIGHT           ; Column of Right Paddle
+    call CheckCrossX
+    ret nz                      ; Return if not equal
+    ld hl, (paddle2pos)
+    call CheckCrossY
+    ret nz
+
+    ld a, (ballSetting)
+    or %01000000
+    ld (ballSetting),a 
+    ld a, $FF
+    ld (ballRotation), a
+    ret
+
+checkBallCross_left:
+    ld c, CROSS_LEFT           ; Column of Left Paddle
+    call CheckCrossX
+    ret nz                      ; Return if not equal
+    ld hl, (paddle1pos)
+    call CheckCrossY
+    ret nz
+
+    ld a, (ballSetting)
+    and %10111111
+    ld (ballSetting),a 
+    ld a, $01
+    ld (ballRotation), a
+    ret
+

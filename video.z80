@@ -194,6 +194,22 @@ Cls:
 
     ret
 
+
+
+PrintBorder:
+    ld hl, $4100
+    ld de, $56e0
+    ld b, $20
+
+    ld a, FILL
+printBorder_loop:
+    ld (hl), a
+    ld (de), a
+    inc l
+    inc e
+    djnz printBorder_loop
+    ret
+
 ;-------------------------------------------------------------------- 
 ; Paints the centre line. 
 ; Alters the value of the AF, B, C and HL registers. 
@@ -224,6 +240,37 @@ printline_loop2:
     ld (hl), ZERO
     call NextPixelLine
     djnz printline_loop
+    ret
+
+ReprintLine:
+    ld hl, (ballPos)
+    ld a, l
+    and %11100000           ; $E0
+    or  %00010000           ; $10
+    ld l, a
+
+    ld b, $06
+reprintLine_loop:
+    ld a, h
+    and %00000111           ; $07
+    cp $01
+    ; if the carry is set, this means less than
+    jr c, reprintLine_00   ; < $01
+    cp $07
+    ; jmp if equal
+    jr z, reprintLine_00
+    ld c, LHDOT
+    jr reprintLine_loopCont
+
+reprintLine_00:
+    ld c, ZERO
+
+reprintLine_loopCont:
+    ld a, (hl)
+    or c
+    ld (hl), a
+    call NextPixelLine
+    djnz reprintLine_loop
     ret
 
 ;-------------------------------------------------------------------- 
@@ -295,7 +342,7 @@ checkVerticalLimit:
 ;     010T TSSS LLLC CCCC
 ; Input:  HL -> address of that line.	    
 ; Output: A -> pixelline for the address.
-; Alters the value of the A, and C.
+; Alters the value of the A, and E.
 ;------------------------------------------------------------------
 AddressToPixelLineCalculator:
     ld a, h
@@ -303,16 +350,155 @@ AddressToPixelLineCalculator:
     rlca
     rlca
     rlca
-    ld c, a
+    ld e, a
 
     ld a, h
     and %00000111   ; preserving the pixel lines
-    or c
-    ld c, a         ; C = TTxxxSSS
+    or e
+    ld e, a         ; E = TTxxxSSS
 
     ld a, l
     and %11100000   ; Preserving the character line number
     rrca
     rrca
-    or c            ; A = TTLLLSSS
+    or e            ; A = TTLLLSSS
+    ret
+
+;--------------------------------------------------------------------
+; Gets the corresponding sprite to paint on the marker.
+; Input:  A  -> score.
+; Output: HL -> address of the sprite to be painted.
+; Alters the value of the AF, BC and HL registers.
+;--------------------------------------------------------------------
+GetPointSprite:
+    ld hl, Zero
+    ld bc, $04
+    inc a
+
+getPointsSprite_loop:
+    dec a
+    ret z
+    add hl, bc
+    jr getPointsSprite_loop
+
+
+;--------------------------------------------------------------------
+; Paint the scoreboard.
+; Each number is 1 byte wide by 16 bytes high.
+; Alters the value of the AF, BC, DE and HL registers.
+;--------------------------------------------------------------------
+PrintPoints:
+    ld a, (p1points)
+    call GetPointSprite
+    push hl
+    ; 1st Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P1
+    call printPoint_print
+    pop hl
+    inc hl
+    inc hl
+    ; 2nd Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P1
+    inc l
+    call printPoint_print
+
+    ld a, (p2points)
+    call GetPointSprite
+    push hl
+    ; 1st Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P2
+    call printPoint_print
+    pop hl
+    inc hl
+    inc hl
+    ; 2nd Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P2
+    inc l
+
+printPoint_print:
+    ld b, $10
+    push de
+    push hl
+
+printPoint_printLoop:
+    ld a, (de)
+    ld (hl), a
+    inc de
+    call NextPixelLine
+    djnz printPoint_printLoop
+    pop hl
+    pop de
+    ret
+
+;--------------------------------------------------------------------
+; Paint the scoreboard.
+; Each number is 1 byte wide by 16 bytes high.
+; Alters the value of the AF, BC, DE and HL registers.
+;--------------------------------------------------------------------
+RePrintPoints:
+    ld a, (p1points)
+    call GetPointSprite
+    push hl
+    ; 1st Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P1
+    call reprintPoint_print
+    pop hl
+    inc hl
+    inc hl
+    ; 2nd Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P1
+    inc l
+    call reprintPoint_print
+
+    ld a, (p2points)
+    call GetPointSprite
+    push hl
+    ; 1st Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P2
+    call reprintPoint_print
+    pop hl
+    inc hl
+    inc hl
+    ; 2nd Digit
+    ld e, (hl)
+    inc hl
+    ld d, (hl)
+    ld hl, POINTS_P2
+    inc l
+
+reprintPoint_print:
+    ld b, $10
+    push de
+    push hl
+
+reprintPoint_printLoop:
+    ld a, (de)
+    or (hl)
+    ld (hl), a
+    inc de
+    call NextPixelLine
+    djnz reprintPoint_printLoop
+    pop hl
+    pop de
     ret

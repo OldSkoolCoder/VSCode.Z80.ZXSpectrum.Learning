@@ -17,6 +17,37 @@
 ;     ^==== 'O'
 
 ScanKeys:
+    ld a, $F7
+    in a, ($FE)
+
+    bit $00, a
+    jr nz, scanKeys_2
+    ld a, (ballSetting)
+    and %11001111
+    or  %00010000
+    ld (ballSetting),a 
+    jr scanKeys_speed
+
+scanKeys_2:
+    bit $01, a
+    jr nz, scanKeys_3
+    ld a, (ballSetting)
+    and %11001111
+    or  %00100000
+    ld (ballSetting),a 
+    jr scanKeys_speed
+
+scanKeys_3:
+    bit $02, a
+    jr nz, scanKeys_ctrl
+    ld a, (ballSetting)
+    or  %00110000
+    ld (ballSetting),a 
+
+scanKeys_speed:
+    xor a
+    ld (countLoopBall), a
+scanKeys_ctrl:
     ; initialise D
     ld d, $00
 
